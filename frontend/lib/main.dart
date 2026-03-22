@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _recordVideo() async {
     final XFile? file = await _picker.pickVideo(
       source: ImageSource.camera,
-      maxDuration: const Duration(seconds: 30),
+      maxDuration: const Duration(seconds: 12),
     );
     if (file == null) return;
     setState(() {
@@ -59,7 +60,7 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       _loading = true;
-      _result = 'Sending request...';
+      _result = 'Uploading and processing...';
     });
 
     try {
@@ -68,7 +69,7 @@ class _HomePageState extends State<HomePage> {
       final req = http.MultipartRequest('POST', uri)
         ..files.add(await http.MultipartFile.fromPath('video', _video!.path));
 
-      final streamed = await req.send();
+      final streamed = await req.send().timeout(const Duration(seconds: 120));
       final body = await streamed.stream.bytesToString();
 
       if (streamed.statusCode >= 200 && streamed.statusCode < 300) {
@@ -111,6 +112,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ]),
+            const SizedBox(height: 8),
+            const Text('Tip: record a steady 8-12 second clip with face and palm visible.'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loading ? null : _predict,
