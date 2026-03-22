@@ -15,6 +15,11 @@ from bp_model import predict_bp_from_frames
 app = FastAPI(title="BP Predictor API", version="1.0.0")
 
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "bp-backend"}
+
+
 def _read_frames(video_path: Path):
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
