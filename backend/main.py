@@ -44,6 +44,24 @@ def _read_frames(video_path: Path):
     return frames, int(round(fps))
 
 
+def _default_rois(frame):
+    h, w = frame.shape[:2]
+
+    cheek_w = max(40, int(w * 0.22))
+    cheek_h = max(40, int(h * 0.22))
+    cheek_x = max(0, int(w * 0.39) - cheek_w // 2)
+    cheek_y = max(0, int(h * 0.32) - cheek_h // 2)
+
+    palm_w = max(50, int(w * 0.28))
+    palm_h = max(50, int(h * 0.28))
+    palm_x = max(0, int(w * 0.50) - palm_w // 2)
+    palm_y = max(0, int(h * 0.72) - palm_h // 2)
+
+    cheek_roi = (cheek_x, cheek_y, cheek_w, cheek_h)
+    palm_roi = (palm_x, palm_y, palm_w, palm_h)
+    return cheek_roi, palm_roi
+
+
 @app.get("/health")
 def health():
     return {"ok": True}
@@ -52,14 +70,14 @@ def health():
 @app.post("/predict")
 async def predict(
     video: UploadFile = File(...),
-    cheek_x: int = Form(...),
-    cheek_y: int = Form(...),
-    cheek_w: int = Form(...),
-    cheek_h: int = Form(...),
-    palm_x: int = Form(...),
-    palm_y: int = Form(...),
-    palm_w: int = Form(...),
-    palm_h: int = Form(...),
+    cheek_x: int | None = Form(None),
+    cheek_y: int | None = Form(None),
+    cheek_w: int | None = Form(None),
+    cheek_h: int | None = Form(None),
+    palm_x: int | None = Form(None),
+    palm_y: int | None = Form(None),
+    palm_w: int | None = Form(None),
+    palm_h: int | None = Form(None),
 ):
     suffix = Path(video.filename or "upload.mp4").suffix or ".mp4"
 
@@ -69,8 +87,13 @@ async def predict(
 
     try:
         frames, fps = _read_frames(temp_path)
-        cheek_roi = (cheek_x, cheek_y, cheek_w, cheek_h)
-        palm_roi = (palm_x, palm_y, palm_w, palm_h)
+
+        custom_roi_values = [cheek_x, cheek_y, cheek_w, cheek_h, palm_x, palm_y, palm_w, palm_h]
+        if all(value is not None for value in custom_roi_values):
+            cheek_roi = (int(cheek_x), int(cheek_y), int(cheek_w), int(cheek_h))
+            palm_roi = (int(palm_x), int(palm_y), int(palm_w), int(palm_h))
+        else:
+            cheek_roi, palm_roi = _default_rois(frames[0])
 
         sys_bp, dia_bp, hr = predict_bp_from_frames(frames, fps, cheek_roi, palm_roi)
 

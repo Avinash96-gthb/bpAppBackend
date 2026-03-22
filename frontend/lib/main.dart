@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 const String kDefaultBackendUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8000',
+  defaultValue: 'https://bpappbackend.onrender.com',
 );
 
 void main() {
@@ -35,18 +35,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _backendUrl = TextEditingController(text: kDefaultBackendUrl);
-
-  final _cheekX = TextEditingController(text: '100');
-  final _cheekY = TextEditingController(text: '100');
-  final _cheekW = TextEditingController(text: '120');
-  final _cheekH = TextEditingController(text: '120');
-
-  final _palmX = TextEditingController(text: '300');
-  final _palmY = TextEditingController(text: '300');
-  final _palmW = TextEditingController(text: '120');
-  final _palmH = TextEditingController(text: '120');
-
   File? _video;
   String _result = 'No result yet';
   bool _loading = false;
@@ -75,18 +63,10 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final baseUrl = _backendUrl.text.trim().replaceAll(RegExp(r'/+$'), '');
+      final baseUrl = kDefaultBackendUrl.trim().replaceAll(RegExp(r'/+$'), '');
       final uri = Uri.parse('$baseUrl/predict');
       final req = http.MultipartRequest('POST', uri)
-        ..files.add(await http.MultipartFile.fromPath('video', _video!.path))
-        ..fields['cheek_x'] = _cheekX.text
-        ..fields['cheek_y'] = _cheekY.text
-        ..fields['cheek_w'] = _cheekW.text
-        ..fields['cheek_h'] = _cheekH.text
-        ..fields['palm_x'] = _palmX.text
-        ..fields['palm_y'] = _palmY.text
-        ..fields['palm_w'] = _palmW.text
-        ..fields['palm_h'] = _palmH.text;
+        ..files.add(await http.MultipartFile.fromPath('video', _video!.path));
 
       final streamed = await req.send();
       final body = await streamed.stream.bytesToString();
@@ -110,17 +90,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _numField(String label, TextEditingController c) {
-    return SizedBox(
-      width: 90,
-      child: TextField(
-        controller: c,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(labelText: label),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,13 +99,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _backendUrl,
-              decoration: const InputDecoration(
-                labelText: 'Backend URL',
-                hintText: 'http://127.0.0.1:8000',
-              ),
-            ),
+            Text('Backend: $kDefaultBackendUrl'),
             const SizedBox(height: 12),
             Row(children: [
               ElevatedButton(onPressed: _recordVideo, child: const Text('Record Video')),
@@ -147,22 +110,6 @@ class _HomePageState extends State<HomePage> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ]),
-            const SizedBox(height: 16),
-            const Text('Cheek ROI (x, y, w, h)'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              _numField('cx', _cheekX),
-              _numField('cy', _cheekY),
-              _numField('cw', _cheekW),
-              _numField('ch', _cheekH),
-            ]),
-            const SizedBox(height: 12),
-            const Text('Palm ROI (x, y, w, h)'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              _numField('px', _palmX),
-              _numField('py', _palmY),
-              _numField('pw', _palmW),
-              _numField('ph', _palmH),
             ]),
             const SizedBox(height: 20),
             ElevatedButton(
