@@ -1,0 +1,50 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./bp_model.py:/app/bp_model.py
+      - ./training_data.xlsx:/app/training_data.xlsx
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+  flutter:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    platform: linux/amd64
+    working_dir: /workspace
+    environment:
+      - ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
+    volumes:
+      - ./frontend:/workspace
+      - flutter-pub-cache:/sdks/flutter/.pub-cache
+      - flutter-gradle-cache:/root/.gradle
+    entrypoint: ["bash", "-lc"]
+    command: "tail -f /dev/null"
+
+  buildozer:
+    image: ghcr.io/kivy/buildozer:latest
+    platform: linux/amd64
+    entrypoint: ["sh", "/home/user/hostcwd/docker-buildozer.sh"]
+    working_dir: /home/user/hostcwd
+    volumes:
+      - ./:/home/user/hostcwd
+      - project-build-dir:/home/user/hostcwd/.buildozer
+      - buildozer-cache:/home/user/.buildozer
+      - gradle-cache:/home/user/.gradle
+    environment:
+      - USER=user
+      - GRADLE_USER_HOME=/home/user/.gradle
+    stdin_open: true
+    tty: true
+
+volumes:
+  project-build-dir:
+  buildozer-cache:
+  gradle-cache:
+  flutter-pub-cache:
+  flutter-gradle-cache:
